@@ -1,0 +1,6 @@
+building_windows_float_processed - 0
+building_windows_non_float_processed - 1
+vehicle_windows_float_processed - 2
+containers - 3
+tableware - 4
+headlamps - 5
