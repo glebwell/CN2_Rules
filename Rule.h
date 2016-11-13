@@ -5,7 +5,7 @@
 #include "Validators.h"
 
 class Rule;
-using ExIterator = Examples::const_iterator;
+using ExIterator = Examples::iterator;
 // covered examples positions mapped to attribite index
 using CoveryMap = std::vector<std::pair<unsigned char, ExIterator>>;
 using RulePtr = std::shared_ptr<Rule>;
@@ -30,7 +30,7 @@ public:
 
 	void addSelector(SelectorPtr s);
 	// Apply data and target class to a rule
-	void filterAndStore(const DataVector& data, unsigned char target_class);
+    void filterAndStore(const DataVector &const_data, unsigned char target_class);
 	// Return True if the rule passes the general validator's requirements
 	bool isValid() const;
 	// Return True if the rule passes the significance validator's requirements(is significant in regard to its parent).

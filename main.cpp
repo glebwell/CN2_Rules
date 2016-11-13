@@ -13,14 +13,15 @@ void train()
 }
 void test()
 {
-	RuleClassifier rc(DataFileReader::getInstance().testData(), learner.rules());
-	rc.run();
+    //RuleClassifier rc(DataFileReader::getInstance().testData(), learner.rules());
+    //rc.run();
 }
 int main(int argc, char* argv[])
 {
+    const char* filename = argv[1];
 	try
 	{
-		DataFileReader::run("glass_with_names_shuffle.dat", 126);
+        DataFileReader::run(filename, 3000000);
 		std::cout << measure<>::execution(train) <<"ms" << "\n";
 		std::cout << measure<>::execution(test) << "ms" << "\n";
 	}

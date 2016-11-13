@@ -22,41 +22,41 @@ bool Rule::applySelectors(const std::vector<float>& example) const
 		if ((*sel)(example[sel->index()]) == false) // call selector
 			return false;
 	}
-
 	return true;
 }
 
-void Rule::filterAndStore(const DataVector& data, unsigned char target_class)
+void Rule::filterAndStore(const DataVector& const_data, unsigned char target_class)
 {
-	m_target_class = target_class; // init class value
-	if (m_selectors.empty()) // don't calc dist for default rule
-	{
-		m_rule_dist = DataFileReader::getInstance().distribution();
-		m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
-	}
-	else // calc covered examples and distribution
-	{
-		size_t data_size = data.size();
-		if (m_rule_dist.size() < data_size)
-			m_rule_dist.resize(data_size);
+    m_target_class = target_class; // init class value
+    if (m_selectors.empty()) // don't calc dist for default rule
+    {
+        m_rule_dist = DataFileReader::getInstance().distribution();
+        m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
+    }
+    else // calc covered examples and distribution
+    {
+        DataVector& data = const_cast<DataVector&>(const_data); // make possible to store non const iterators in m_covered_examples
+        size_t data_size = data.size();
+        if (m_rule_dist.size() < data_size)
+            m_rule_dist.resize(data_size);
 
-		size_t covery_in_class;
-		for (size_t c = 0; c < data_size; ++c)
-		{
-			covery_in_class = 0;
-			for (Examples::const_iterator i = data[c].cbegin(); i != data[c].cend(); ++i)
-			{
-				if (applySelectors(*i))
-				{
-					++covery_in_class;
-					m_covered_examples.emplace_back(c, i);
-				}
-			}
-			m_covering += covery_in_class;
-			m_rule_dist[c] = covery_in_class;
-		}
-	}
-	
+        size_t covery_in_class;
+        for (unsigned char c = 0; c < data_size; ++c)
+        {
+            covery_in_class = 0;
+            Examples& ex = data[c];
+            for (Examples::iterator i = ex.begin(); i != ex.end(); ++i)
+            {
+                if (applySelectors(*i))
+                {
+                    ++covery_in_class;
+                    m_covered_examples.push_back( {c, i} );
+                }
+            }
+            m_covering += covery_in_class;
+            m_rule_dist[c] = covery_in_class;
+        }
+    }
 }
 
 bool Rule::testRule(const std::vector<float>& example) const

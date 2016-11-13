@@ -5,16 +5,15 @@
 
 void CN2UnorderedLearner::fit(DataVector& data)
 {
-	size_t classAmount = DataFileReader::getInstance().distribution().size();
-	for (unsigned char curr_class = 0; curr_class < classAmount; ++curr_class)
-	{
-		findRules(data, curr_class);
-	}
-	filterRulesByQuality();
-	// sort by class
-	std::sort(m_rules.begin(), m_rules.end(), [](const RulePtr& r1, const RulePtr& r2) {return r1->targetClass() < r2->targetClass(); });
-	m_rules.push_back(generateDefaultRule(data));
-
+    size_t classAmount = DataFileReader::getInstance().distribution().size();
+    for (unsigned char curr_class = 0; curr_class < classAmount; ++curr_class)
+    {
+        findRules(data, curr_class);
+    }
+    filterRulesByQuality();
+    // sort by class
+    std::sort(m_rules.begin(), m_rules.end(), [](const RulePtr& r1, const RulePtr& r2) {return r1->targetClass() < r2->targetClass(); });
+    m_rules.push_back(generateDefaultRule(data));
 }
 
 void CN2UnorderedLearner::findRules(DataVector& data, unsigned char tc)
@@ -38,9 +37,9 @@ bool CN2UnorderedLearner::positiveRemainingDataStopping(const DataVector& data, 
 }
 void CN2UnorderedLearner::coverAndRemove(DataVector& data, RulePtr r) const
 {
-	const auto& covery = r->coveryMap();
-	for (const auto& class_iter_pair : covery)
-		data[class_iter_pair.first].erase(class_iter_pair.second); 
+    const CoveryMap& covery = r->coveryMap();
+    for (const auto& class_iter_pair : covery)
+        data[class_iter_pair.first].erase(class_iter_pair.second);
 }
 bool CN2UnorderedLearner::ruleStopping(RulePtr r) const
 {
@@ -65,20 +64,13 @@ void CN2UnorderedLearner::printRules() const
 
 void CN2UnorderedLearner::filterRulesByQuality()
 {
-	// TODO: refactor this function
-	float majority_quality = DataFileReader::getInstance().majorityQuality();
-	for (auto& r : m_rules)
-	{
-		if (r->quality() < majority_quality)
-		{
-			if (m_rules.size() >= 2)
-			{
-				std::swap(r, m_rules.back());
-				m_rules.pop_back();
-			}
-			
-		}
-	}
+    float majority_quality = DataFileReader::getInstance().majorityQuality();
+    std::vector<RulePtr> filtered_rules;
+    filtered_rules.reserve(m_rules.size());
+    std::copy_if(m_rules.cbegin(), m_rules.cend(), std::back_inserter(filtered_rules),
+                 [majority_quality](RulePtr r) { return r->quality() > majority_quality;}
+    );
+    m_rules = std::move(filtered_rules);
 }
 
 
