@@ -17,9 +17,9 @@ Rule::Rule(RulePtr r) : m_parent_rule(r), m_covering(0), m_quality(0), m_target_
 
 bool Rule::applySelectors(const std::vector<float>& example) const
 { 
-	for (const auto& sel : m_selectors)
+    for (const SelectorPtr& sel : m_selectors)
 	{
-		if ((*sel)(example[sel->index()]) == false) // call selector
+        if ((*sel)(example[sel->m_attr_index]) == false) // call selector
 			return false;
 	}
 	return true;

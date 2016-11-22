@@ -1,92 +1,50 @@
 #pragma once
 
 #include <vector>
-#include <functional>
 #include <memory>
+
+#include <host_defines.h> // __host__ __device__
+
 #include "Attribute.h"
 #include "DataFileReader.h"
 
-class ISelector
+struct Selector
 {
-public:
-	enum class SelectorType : unsigned char{ DEFAULT, EQUAL, NOT_EQUAL, LESS_EQUAL, GREATER_EQUAL };
-	ISelector(SelectorType type, float internal_value, unsigned char attr_index);
-	virtual bool operator()(float test_value) const = 0;
-	virtual bool operator==(const ISelector&) const;
-	virtual bool operator!=(const ISelector&) const;
-	virtual std::string toString() const = 0;
-	unsigned char index() const;
-	SelectorType type() const;
+    enum class SelectorType : unsigned char{ DEFAULT, EQUAL, NOT_EQUAL, LESS_EQUAL, GREATER_EQUAL };
+    __host__ __device__ Selector(SelectorType type, float internal_value, unsigned char attr_index) : m_type(type), m_value(internal_value), m_attr_index(attr_index){}
+    __host__ __device__ bool operator()(float test_value) const
+    {
+        switch (m_type)
+        {
+        case SelectorType::DEFAULT:
+            return true;
+        case SelectorType::EQUAL:
+            return test_value == m_value;
+        case SelectorType::NOT_EQUAL:
+            return test_value != m_value;
+        case SelectorType::LESS_EQUAL:
+            return test_value <= m_value;
+        case SelectorType::GREATER_EQUAL:
+            return test_value >= m_value;
+        default:
+            return false;
+        }
+    }
+    __host__ __device__ bool operator==(const Selector& rhs) const
+    {
+        return m_type == rhs.m_type && m_value == rhs.m_value && m_attr_index == rhs.m_attr_index;
+    }
+    __host__ __device__ bool operator!=(const Selector& rhs) const
+    {
+        return m_type != rhs.m_type && m_value != rhs.m_value && m_attr_index != rhs.m_attr_index;
+    }
 
-protected:
-    SelectorType m_selector_type; // type of selector
-	const float m_value; // compare value
-	const unsigned char m_attr_index; // attribute index
+    std::string toString() const;
+
+
+    SelectorType m_type; // type of selector
+    float m_value; // compare value
+    unsigned char m_attr_index; // attribute index
 };
 
-template <typename Functor>
-class Selector : public ISelector
-{
-public:
-	Selector(SelectorType type, float internal_value, unsigned char attr_index) : ISelector(type, internal_value, attr_index){}
-	bool operator()(float test_value) const override
-	{
-		return m_func(test_value, m_value);
-	}
-	virtual std::string toString() const override
-	{
-		const std::vector<Attribute>& attr_ref = DataFileReader::getInstance().attributes();
-		if (!attr_ref.empty())
-		{
-			std::string op;
-			switch (m_selector_type)
-			{
-			case SelectorType::EQUAL:
-				op = "=="; break;
-			case SelectorType::NOT_EQUAL:
-				op = "!="; break;
-			case SelectorType::LESS_EQUAL:
-				op = "<="; break;
-			case SelectorType::GREATER_EQUAL:
-				op = ">="; break;
-			default:
-				break;
-			}
-			return attr_ref.at(m_attr_index).m_name + " " + op + " " + std::to_string(m_value);
-		}
-		else
-			throw std::logic_error("Attributes set is empty");
-		
-	}
-	virtual bool operator==(const ISelector& rhs) const override
-	{
-		return m_selector_type == rhs.type() && ISelector::operator==(rhs);
-	}
-
-	virtual bool operator!=(const ISelector& rhs) const override
-	{
-		return m_selector_type != rhs.type() && ISelector::operator!=(rhs);
-	}
-
-private:
-	Functor m_func;
-};
-
-/*
-struct NotEqual
-{
-	bool operator()(float left, float right) const
-	{
-		return left != right;
-	}
-};
-*/
-struct AlwaysTrue
-{
-	bool operator()(float, float) const
-	{
-		return true;
-	}
-};
-
-using SelectorPtr = std::shared_ptr<ISelector>;
+using SelectorPtr = std::shared_ptr<Selector>;

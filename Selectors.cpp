@@ -1,31 +1,26 @@
 #include "Selectors.h"
 
-ISelector::ISelector(SelectorType type,float internal_value, unsigned char attr_index): 
-	m_selector_type(type),m_value(internal_value), m_attr_index(attr_index)
+std::string Selector::toString() const
 {
-
+    const std::vector<Attribute>& attr_ref = DataFileReader::getInstance().attributes();
+    if (!attr_ref.empty())
+    {
+        std::string op;
+        switch (m_type)
+        {
+        case SelectorType::EQUAL:
+            op = "=="; break;
+        case SelectorType::NOT_EQUAL:
+            op = "!="; break;
+        case SelectorType::LESS_EQUAL:
+            op = "<="; break;
+        case SelectorType::GREATER_EQUAL:
+            op = ">="; break;
+        default:
+            break;
+        }
+        return attr_ref.at(m_attr_index).m_name + " " + op + " " + std::to_string(m_value);
+    }
+    else
+        throw std::logic_error("Attributes set is empty");
 }
-
-unsigned char ISelector::index() const
-{
-	return m_attr_index;
-}
-
-bool ISelector::operator==(const ISelector& rhs) const
-{
-	return m_value == rhs.m_value && m_attr_index == rhs.m_attr_index;
-}
-
-bool ISelector::operator!=(const ISelector& rhs) const
-{
-	return m_value != rhs.m_value && m_attr_index != rhs.m_attr_index;
-}
-
-ISelector::SelectorType ISelector::type() const
-{
-	return m_selector_type;
-}
-
-
-
-

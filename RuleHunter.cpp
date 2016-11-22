@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <set>
 #include "RuleHunter.h"
-#include "SelectorFactory.h"
-
 
 RuleHunter::RuleHunter(unsigned char beam_width) : m_beam_width(beam_width)
 {
@@ -158,15 +156,15 @@ void RuleHunter::generateSelectors(Attribute::attr_type type, float value,
 {
 	if (type == Attribute::attr_type::DISCRETE)
 	{
-		auto s1 = SelectorFactory::make(ISelector::SelectorType::EQUAL, value, attr_idx);
-		auto s2 = SelectorFactory::make(ISelector::SelectorType::NOT_EQUAL, value, attr_idx);
+        auto s1 = std::make_shared<Selector>(Selector::SelectorType::EQUAL, value, attr_idx);
+        auto s2 = std::make_shared<Selector>(Selector::SelectorType::NOT_EQUAL, value, attr_idx);
 		vec_to_store.push_back(std::move(s1));
 		vec_to_store.push_back(std::move(s2));
 	}
 	else // continious
 	{
-		auto s1 = SelectorFactory::make(ISelector::SelectorType::GREATER_EQUAL, value, attr_idx);
-		auto s2 = SelectorFactory::make(ISelector::SelectorType::LESS_EQUAL, value, attr_idx);
+        auto s1 = std::make_shared<Selector>(Selector::SelectorType::GREATER_EQUAL, value, attr_idx);
+        auto s2 = std::make_shared<Selector>(Selector::SelectorType::LESS_EQUAL, value, attr_idx);
 		vec_to_store.push_back(std::move(s1));
 		vec_to_store.push_back(std::move(s2));
 	}
