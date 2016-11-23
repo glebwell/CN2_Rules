@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <tuple>
 
 #include <host_defines.h> // __host__ __device__
 
@@ -41,7 +42,7 @@ struct Selector
 
     bool operator<(const Selector& rhs) const
     {
-        return m_attr_index < rhs.m_attr_index;
+        return std::make_tuple(m_value, m_attr_index, m_type) < std::make_tuple(rhs.m_value, rhs.m_attr_index, rhs.m_type);
     }
 
     std::string toString() const;
