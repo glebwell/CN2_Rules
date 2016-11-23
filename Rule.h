@@ -12,7 +12,7 @@ using RulePtr = std::shared_ptr<Rule>;
 
 class Rule
 {
-	std::vector<SelectorPtr> m_selectors;
+    std::vector<const Selector*> m_selectors;
 	CoveryMap m_covered_examples;
 	Distribution m_rule_dist;
 	std::shared_ptr<Rule> m_parent_rule;
@@ -28,7 +28,7 @@ public:
 	bool operator<(const Rule& rhs) const;
 	bool operator>(const Rule& rhs) const;
 
-	void addSelector(SelectorPtr s);
+    void addSelector(const Selector *s);
 	// Apply data and target class to a rule
     void filterAndStore(const DataVector &const_data, unsigned char target_class);
 	// Return True if the rule passes the general validator's requirements
@@ -47,7 +47,7 @@ public:
 	std::shared_ptr<Rule> parent() const;
 	unsigned char maxRuleLength() const;
 	const CoveryMap& coveryMap() const;
-	const std::vector<SelectorPtr>& selectors() const;
+    const std::vector<const Selector*>& selectors() const;
 	std::string distributionToString() const;
 	float quality() const;
 private:

@@ -36,6 +36,8 @@ cuda_add_executable(
 		Measure.h
 		RuleClassifier.cpp
 		RuleClassifier.h
+		SelectorGenerator.cpp
+		SelectorGenerator.h
 		main.cpp
 )
 

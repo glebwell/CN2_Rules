@@ -39,6 +39,11 @@ struct Selector
         return m_type != rhs.m_type && m_value != rhs.m_value && m_attr_index != rhs.m_attr_index;
     }
 
+    bool operator<(const Selector& rhs) const
+    {
+        return m_attr_index < rhs.m_attr_index;
+    }
+
     std::string toString() const;
 
 

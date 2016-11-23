@@ -14,7 +14,7 @@ RulePtr RuleHunter::initializeRule(const DataVector& data, unsigned char target_
 	return default_rule->isValid() ? default_rule : nullptr;
 }
 
-RulePtr RuleHunter::operator()(const DataVector& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules) const
+RulePtr RuleHunter::operator()(const DataVector& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules)
 {
 	RulePtr best_rule = initializeRule(data, target_class);
 	if (!best_rule)
@@ -64,12 +64,12 @@ bool RuleHunter::isExist(RulePtr tested_rule, const std::vector<RulePtr>& ex_rul
 	return ex_rules.cend() != std::find(ex_rules.cbegin(), ex_rules.cend(), tested_rule);
 }
 
-std::vector<RulePtr> RuleHunter::refineRule(const DataVector& data, RulePtr candidate_rule) const
+std::vector<RulePtr> RuleHunter::refineRule(const DataVector& data, RulePtr candidate_rule)
 {
 	std::vector<RulePtr> result;
 	if (candidate_rule && candidate_rule->length() <= candidate_rule->maxRuleLength())
 	{
-		std::vector<SelectorPtr> possible_selectors = findNewSelectors(data, candidate_rule);
+        std::vector<const Selector*> possible_selectors = findNewSelectors(data, candidate_rule);
 		for (const auto& sel : possible_selectors)
 		{
 			RulePtr new_rule = std::make_shared<Rule>(candidate_rule);
@@ -93,9 +93,9 @@ std::vector<RulePtr> RuleHunter::cutRules(const std::vector<RulePtr>& rules_to_c
 		return rules_to_cut;
 }
 
-std::vector<SelectorPtr> RuleHunter::findNewSelectors(const DataVector& data, RulePtr r) const
+std::vector<const Selector*> RuleHunter::findNewSelectors(const DataVector& data, RulePtr r)
 {
-	std::vector<SelectorPtr> possible_selectors;
+    std::vector<const Selector*> possible_selectors;
 	
 	// To generate nw selectors, we need unique values 
 	// Index of vector identify index of example attribute. That vector containes unique values of attributes.
@@ -103,7 +103,7 @@ std::vector<SelectorPtr> RuleHunter::findNewSelectors(const DataVector& data, Ru
 	size_t attr_size = attr_info.size();
 	std::vector<std::set<float>> attr_val_set(attr_size);
 	float value;
-	Attribute::attr_type sel_type;
+    Attribute::attr_type attr_type;
 	const CoveryMap& map = r->coveryMap();
 
 	if (map.empty()) // generate for all data
@@ -120,8 +120,8 @@ std::vector<SelectorPtr> RuleHunter::findNewSelectors(const DataVector& data, Ru
 					{
 						set.insert(value);
 						// generate selectors
-						sel_type = attr_info[attr_idx].m_type;
-						generateSelectors(sel_type, value, attr_idx, possible_selectors);
+                        attr_type = attr_info[attr_idx].m_type;
+                        m_gen.store(attr_type, value, attr_idx, possible_selectors);
 					}		
 				}
 			}
@@ -141,8 +141,8 @@ std::vector<SelectorPtr> RuleHunter::findNewSelectors(const DataVector& data, Ru
 				{
 					set.insert(value);
 					// generate selectors
-					sel_type = attr_info[attr_idx].m_type;
-					generateSelectors(sel_type, value, attr_idx, possible_selectors);
+                    attr_type = attr_info[attr_idx].m_type;
+                    m_gen.store(attr_type, value, attr_idx, possible_selectors);
 				}
 			}
 		}
@@ -150,25 +150,6 @@ std::vector<SelectorPtr> RuleHunter::findNewSelectors(const DataVector& data, Ru
 	return possible_selectors;
 }
 
-
-void RuleHunter::generateSelectors(Attribute::attr_type type, float value,
-	unsigned char attr_idx, std::vector<SelectorPtr>& vec_to_store) const
-{
-	if (type == Attribute::attr_type::DISCRETE)
-	{
-        auto s1 = std::make_shared<Selector>(Selector::SelectorType::EQUAL, value, attr_idx);
-        auto s2 = std::make_shared<Selector>(Selector::SelectorType::NOT_EQUAL, value, attr_idx);
-		vec_to_store.push_back(std::move(s1));
-		vec_to_store.push_back(std::move(s2));
-	}
-	else // continious
-	{
-        auto s1 = std::make_shared<Selector>(Selector::SelectorType::GREATER_EQUAL, value, attr_idx);
-        auto s2 = std::make_shared<Selector>(Selector::SelectorType::LESS_EQUAL, value, attr_idx);
-		vec_to_store.push_back(std::move(s1));
-		vec_to_store.push_back(std::move(s2));
-	}
-}
 
 std::vector<float> RuleHunter::makeSamples(const DataVector& data, unsigned char attr_idx) const
 {

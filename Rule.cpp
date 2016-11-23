@@ -17,7 +17,7 @@ Rule::Rule(RulePtr r) : m_parent_rule(r), m_covering(0), m_quality(0), m_target_
 
 bool Rule::applySelectors(const std::vector<float>& example) const
 { 
-    for (const SelectorPtr& sel : m_selectors)
+    for (const auto& sel : m_selectors)
 	{
         if ((*sel)(example[sel->m_attr_index]) == false) // call selector
 			return false;
@@ -145,7 +145,7 @@ bool Rule::isSignificant(bool useInitialClassDist /*= false*/) const
 	return lrs > 0;
 }
 
-void Rule::addSelector(SelectorPtr s)
+void Rule::addSelector(const Selector* s)
 {
 	m_selectors.push_back(s);
 }
@@ -237,7 +237,7 @@ unsigned char Rule::maxRuleLength() const
 	return m_validator.maxRuleLength();
 }
 
-const std::vector<SelectorPtr>& Rule::selectors() const
+const std::vector<const Selector *> &Rule::selectors() const
 {
 	return m_selectors;
 }
