@@ -1,5 +1,5 @@
 #pragma once
-#include "DataFileReader.h"
+#include "DataFileReader.cuh"
 #include "RuleHunter.h"
 
 class CN2UnorderedLearner

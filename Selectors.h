@@ -7,7 +7,7 @@
 #include <host_defines.h> // __host__ __device__
 
 #include "Attribute.h"
-#include "DataFileReader.h"
+#include "DataFileReader.cuh"
 
 struct Selector
 {

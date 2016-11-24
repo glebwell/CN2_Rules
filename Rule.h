@@ -1,7 +1,7 @@
 #pragma once
 #include <iosfwd>
 #include "Selectors.h"
-#include "DataFileReader.h"
+#include "DataFileReader.cuh"
 #include "Validators.h"
 
 class Rule;

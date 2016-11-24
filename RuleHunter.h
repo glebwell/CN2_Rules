@@ -1,6 +1,6 @@
 #pragma once
 #include "Rule.h"
-#include "DataFileReader.h"
+#include "DataFileReader.cuh"
 #include "Selectors.h"
 #include "SelectorGenerator.h"
 

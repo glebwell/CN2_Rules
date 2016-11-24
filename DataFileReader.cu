@@ -1,9 +1,11 @@
 #include <fstream>
 #include <algorithm>
 #include <numeric>
-#include "DataFileReader.h"
+
+#include "DataFileReader.cuh"
 
 std::unique_ptr<DataFileReader> DataFileReader::m_self;
+thrust::device_vector<float>* DataFileReader::m_device_train_data;
 
 DataFileReader::DataFileReader(const char* filename, size_t train_data_size) :m_header_parsed(false)
 {
@@ -31,8 +33,11 @@ DataFileReader::DataFileReader(const char* filename, size_t train_data_size) :m_
 		throw DataFileReaderException(std::string("Fail to open file ") + filename);
 	}
 	
+    // TODO: implement this functions
 	calcClassDistribution();
 	calcMajorityQuality();
+    m_device_train_data = new thrust::device_vector<float>();
+    *m_device_train_data = m_host_train_data;
 }
 
 const std::vector<Attribute>& DataFileReader::attributes() const
@@ -40,16 +45,17 @@ const std::vector<Attribute>& DataFileReader::attributes() const
 	return m_attributes;
 }
 
-DataVector& DataFileReader::trainData()
+thrust::host_vector<float>& DataFileReader::trainData()
 {
-	return m_train_data;
+    return m_host_train_data;
 }
 
+/*
 DataVector& DataFileReader::testData()
 {
 	return m_test_data;
 }
-
+*/
 void DataFileReader::parseHeader(const std::string& line)
 {
 	/*
@@ -89,20 +95,40 @@ void DataFileReader::parseHeader(const std::string& line)
 void DataFileReader::parseValueLine(const std::string& line, bool put_to_train)
 {
 	auto tokens = tokenize(line);
+    (void)put_to_train;
+
 	if (tokens.size() == m_attributes.size() + 1) // tokens count must be equal attributes amount + 1 (class)
 	{
 		// TODO: map string to int
- 		int class_value = std::stoi(tokens.back());  // last token is a class
+        float class_value = std::stof(tokens.back());  // last token is a class
 	    tokens.pop_back();
-		std::vector<float> data;
-		data.reserve(tokens.size());
-		std::transform(tokens.cbegin(), tokens.cend(), std::back_inserter(data),
-			[](const std::string& str) {return std::stod(str); }
+
+        auto it = m_class_dist_map.find(class_value);
+        if ( it == m_class_dist_map.end() ) // not found
+        {
+            m_class_dist_map.emplace( class_value, 0u );
+        }
+        else
+        {
+            ++it->second;
+        }
+        //std::vector<float> data;
+        //data.reserve(tokens.size());
+        std::transform(tokens.cbegin(), tokens.cend(), std::back_inserter(m_host_train_data),
+            [](const std::string& str) {return std::stof(str); }
 		);
-		if (put_to_train)
+
+
+        m_host_train_data.push_back(class_value);
+        m_host_train_data.push_back(ALIVE_FLAG);
+
+
+        /*
+        if (put_to_train)
 			insertToVector(m_train_data, class_value, std::move(data));
-		else
-			insertToVector(m_test_data, class_value, std::move(data));
+        else
+            insertToVector(m_test_data, class_value, std::move(data));
+        */
 	}
 	else
 	{
@@ -157,9 +183,9 @@ void DataFileReader::run(const char* filename, size_t train_data_size)
 void DataFileReader::calcClassDistribution()
 {
 	// calculate class <-> data count
-	m_class_dist.reserve(m_test_data.size());
-	for (const auto& examples_vec : m_train_data)
-		m_class_dist.push_back(examples_vec.size());
+    m_class_dist.reserve(m_class_dist_map.size());
+    for (const auto& pair : m_class_dist_map)
+        m_class_dist.push_back(pair.second);
 }
 
 const Distribution& DataFileReader::distribution() const
@@ -178,6 +204,12 @@ void DataFileReader::calcMajorityQuality()
 	size_t max = *std::max_element(m_class_dist.cbegin(), m_class_dist.cend());
 	size_t covering = std::accumulate(m_class_dist.cbegin(), m_class_dist.cend(), 0u);
 	m_majority_quality = (max + 1) / (float)(covering + k);
+}
+
+void DataFileReader::freeDeviceData()
+{
+    if (m_device_train_data)
+        delete m_device_train_data;
 }
 
 DataFileReaderException::DataFileReaderException(std::string&& msg) : m_msg(std::move(msg))

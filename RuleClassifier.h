@@ -1,5 +1,5 @@
 #pragma once
-#include "DataFileReader.h"
+#include "DataFileReader.cuh"
 #include "Rule.h"
 
 class RuleClassifier

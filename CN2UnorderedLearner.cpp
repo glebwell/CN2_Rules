@@ -18,7 +18,7 @@ void CN2UnorderedLearner::fit(DataVector& data)
 
 void CN2UnorderedLearner::findRules(DataVector& data, unsigned char tc)
 {
-	while (!positiveRemainingDataStopping(data, tc))
+    while (!positiveRemainingDataStopping(data, tc)) // TODO: positive remaining data stopping
 	{
 		RulePtr new_rule = m_hunter(data, tc, m_rules);
 		if (!new_rule || ruleStopping(new_rule))
@@ -30,10 +30,13 @@ void CN2UnorderedLearner::findRules(DataVector& data, unsigned char tc)
 
 bool CN2UnorderedLearner::positiveRemainingDataStopping(const DataVector& data, unsigned char target_class) const
 {
+    /*
 	const Examples& ex = data[target_class];
 	size_t num_possible = ex.size();
 	size_t min_covered_examples = 1; // TODO: fix it
 	return num_possible < min_covered_examples;
+    */
+    return false;
 }
 void CN2UnorderedLearner::coverAndRemove(DataVector& data, RulePtr r) const
 {
