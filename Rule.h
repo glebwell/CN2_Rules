@@ -4,17 +4,22 @@
 #include "DataFileReader.cuh"
 #include "Validators.h"
 
+#include "Defines.cuh"
+
+
 class Rule;
-using ExIterator = Examples::iterator;
-// covered examples positions mapped to attribite index
-using CoveryMap = std::vector<std::pair<unsigned char, ExIterator>>;
+class DataContainer;
+using CoveryOffsets = thrust::host_vector<unsigned int>;
+using HostSelectors = thrust::host_vector<Selector>;
 using RulePtr = std::shared_ptr<Rule>;
 
 class Rule
 {
-    std::vector<const Selector*> m_selectors;
-	CoveryMap m_covered_examples;
+    HostSelectors m_selectors;
+    CoveryOffsets m_covered_offsets;
+    std::vector<unsigned int> m_covered_offsets_check;
 	Distribution m_rule_dist;
+    std::vector<unsigned int> m_rule_dist_check;
 	std::shared_ptr<Rule> m_parent_rule;
 	size_t m_covering;
 	float m_quality;
@@ -30,7 +35,8 @@ public:
 
     void addSelector(const Selector *s);
 	// Apply data and target class to a rule
-    void filterAndStore(const DataVector &const_data, unsigned char target_class);
+    void filterAndStore(DataContainer &data, unsigned char target_class);
+    void filterAndStore(unsigned char target_class);
 	// Return True if the rule passes the general validator's requirements
 	bool isValid() const;
 	// Return True if the rule passes the significance validator's requirements(is significant in regard to its parent).
@@ -46,12 +52,12 @@ public:
 	const Distribution& distribution() const;
 	std::shared_ptr<Rule> parent() const;
 	unsigned char maxRuleLength() const;
-	const CoveryMap& coveryMap() const;
-    const std::vector<const Selector*>& selectors() const;
+    const CoveryOffsets& coveryOffsets() const;
+    const HostSelectors& selectors() const;
 	std::string distributionToString() const;
 	float quality() const;
 private:
-	bool applySelectors(const std::vector<float>& example) const;
+    //bool applySelectors(const std::vector<float>& example) const;
 	bool compareSelectors(const Rule& other) const;
 };
 

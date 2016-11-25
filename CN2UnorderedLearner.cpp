@@ -1,9 +1,10 @@
 #include <iostream>
 #include <algorithm>
 #include "CN2UnorderedLearner.h"
+#include "DataContainer.cuh"
 #include "Rule.h"
 
-void CN2UnorderedLearner::fit(DataVector& data)
+void CN2UnorderedLearner::fit(DataContainer& data)
 {
     size_t classAmount = DataFileReader::getInstance().distribution().size();
     for (unsigned char curr_class = 0; curr_class < classAmount; ++curr_class)
@@ -13,22 +14,22 @@ void CN2UnorderedLearner::fit(DataVector& data)
     filterRulesByQuality();
     // sort by class
     std::sort(m_rules.begin(), m_rules.end(), [](const RulePtr& r1, const RulePtr& r2) {return r1->targetClass() < r2->targetClass(); });
-    m_rules.push_back(generateDefaultRule(data));
+    m_rules.push_back(generateDefaultRule());
 }
 
-void CN2UnorderedLearner::findRules(DataVector& data, unsigned char tc)
+void CN2UnorderedLearner::findRules(DataContainer& data, unsigned char tc)
 {
     while (!positiveRemainingDataStopping(data, tc)) // TODO: positive remaining data stopping
 	{
 		RulePtr new_rule = m_hunter(data, tc, m_rules);
 		if (!new_rule || ruleStopping(new_rule))
 			break;
-		coverAndRemove(data, new_rule);
+        coverAndRemove(data, new_rule); // TODO: coverAndRemove
 		m_rules.push_back(new_rule);
 	}
 }
 
-bool CN2UnorderedLearner::positiveRemainingDataStopping(const DataVector& data, unsigned char target_class) const
+bool CN2UnorderedLearner::positiveRemainingDataStopping(const DataContainer& data, unsigned char target_class) const
 {
     /*
 	const Examples& ex = data[target_class];
@@ -38,11 +39,9 @@ bool CN2UnorderedLearner::positiveRemainingDataStopping(const DataVector& data, 
     */
     return false;
 }
-void CN2UnorderedLearner::coverAndRemove(DataVector& data, RulePtr r) const
+void CN2UnorderedLearner::coverAndRemove(DataContainer &data, RulePtr r) const
 {
-    const CoveryMap& covery = r->coveryMap();
-    for (const auto& class_iter_pair : covery)
-        data[class_iter_pair.first].erase(class_iter_pair.second);
+    data.removeKernelCall(r->selectors());
 }
 bool CN2UnorderedLearner::ruleStopping(RulePtr r) const
 {
@@ -50,10 +49,10 @@ bool CN2UnorderedLearner::ruleStopping(RulePtr r) const
 	return r->isSignificant(true);
 }
 
-RulePtr CN2UnorderedLearner::generateDefaultRule(const DataVector& data) const
+RulePtr CN2UnorderedLearner::generateDefaultRule() const
 {
 	RulePtr default_rule = std::make_shared<Rule>();
-	default_rule->filterAndStore(data, -1);
+    default_rule->filterAndStore( 255 );
 	default_rule->doEvaluate();
 	//default_rule->createModel();
 	return default_rule;

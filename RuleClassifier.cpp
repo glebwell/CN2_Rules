@@ -2,6 +2,8 @@
 #include <algorithm>
 #include "RuleClassifier.h"
 
+/*
+
 RuleClassifier::RuleClassifier(const DataVector& test_data, const std::vector<RulePtr>& rules): 
 m_total_examples_count(0), m_success_prediction_count(0), m_test_data(test_data), m_rules(rules)
 {
@@ -89,3 +91,5 @@ unsigned char RuleClassifier::predict(const std::vector<float>& example) const
 		}
 	}
 }
+
+*/

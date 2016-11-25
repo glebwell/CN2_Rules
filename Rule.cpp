@@ -4,6 +4,8 @@
 #include <sstream>
 #include "Rule.h"
 
+#include "DataContainer.cuh"
+
 GuardianValidator Rule::m_validator;
 
 Rule::Rule(RulePtr r) : m_parent_rule(r), m_covering(0), m_quality(0), m_target_class(-1)
@@ -14,54 +16,38 @@ Rule::Rule(RulePtr r) : m_parent_rule(r), m_covering(0), m_quality(0), m_target_
 	}
 }
 
-
+/*
 bool Rule::applySelectors(const std::vector<float>& example) const
 { 
-    for (const auto& sel : m_selectors)
+    for (const Selector& sel : m_selectors)
 	{
-        if ((*sel)(example[sel->m_attr_index]) == false) // call selector
+        if ( sel(example[sel.m_attr_index]) == false) // call selector
 			return false;
 	}
 	return true;
 }
-
-void Rule::filterAndStore(const DataVector& const_data, unsigned char target_class)
+*/
+void Rule::filterAndStore(unsigned char target_class)
 {
     m_target_class = target_class; // init class value
-    if (m_selectors.empty()) // don't calc dist for default rule
-    {
-        m_rule_dist = DataFileReader::getInstance().distribution();
-        m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
-    }
-    else // calc covered examples and distribution
-    {
-        DataVector& data = const_cast<DataVector&>(const_data); // make possible to store non const iterators in m_covered_examples
-        size_t data_size = data.size();
-        if (m_rule_dist.size() < data_size)
-            m_rule_dist.resize(data_size);
+    m_rule_dist = DataFileReader::getInstance().distribution();
+    m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
+}
 
-        size_t covery_in_class;
-        for (unsigned char c = 0; c < data_size; ++c)
-        {
-            covery_in_class = 0;
-            Examples& ex = data[c];
-            for (Examples::iterator i = ex.begin(); i != ex.end(); ++i)
-            {
-                if (applySelectors(*i))
-                {
-                    ++covery_in_class;
-                    m_covered_examples.push_back( {c, i} );
-                }
-            }
-            m_covering += covery_in_class;
-            m_rule_dist[c] = covery_in_class;
-        }
-    }
+void Rule::filterAndStore(DataContainer &data, unsigned char target_class)
+{
+    m_target_class = target_class;
+    m_covered_offsets = data.countKernelCall(m_selectors, m_rule_dist);
+    m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
+    m_covered_offsets_check.assign(m_covered_offsets.cbegin(), m_covered_offsets.cend());
+    m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
 }
 
 bool Rule::testRule(const std::vector<float>& example) const
 {
-	return applySelectors(example);
+    //TODO: this method
+    return true;
+    //return applySelectors(example);
 }
 
 void Rule::doEvaluate()
@@ -147,7 +133,8 @@ bool Rule::isSignificant(bool useInitialClassDist /*= false*/) const
 
 void Rule::addSelector(const Selector* s)
 {
-	m_selectors.push_back(s);
+    if (s)
+        m_selectors.push_back(*s);
 }
 
 unsigned char Rule::targetClass() const
@@ -160,9 +147,9 @@ size_t Rule::coveredExamplesCount() const
 	return m_covering;
 }
 
-const CoveryMap& Rule::coveryMap() const
+const CoveryOffsets& Rule::coveryOffsets() const
 {
-	return m_covered_examples;
+    return m_covered_offsets;
 }
 
 
@@ -197,7 +184,7 @@ bool Rule::compareSelectors(const Rule& other) const
 	{
 		for (size_t i = 0; i < m_selectors.size(); ++i)
 		{
-			if (*m_selectors[i] != *other.m_selectors[i])
+            if (m_selectors[i] != other.m_selectors[i])
 				return false;
 		}
 	}
@@ -208,7 +195,7 @@ bool Rule::compareSelectors(const Rule& other) const
 bool Rule::operator!=(const Rule& rhs) const
 {
 	return m_quality != rhs.m_quality 
-		&& m_covering != rhs.m_covering && m_covered_examples != rhs.m_covered_examples;
+        && m_covering != rhs.m_covering && m_covered_offsets != rhs.m_covered_offsets;
 }
 
 bool Rule::operator<(const Rule& rhs) const
@@ -237,7 +224,7 @@ unsigned char Rule::maxRuleLength() const
 	return m_validator.maxRuleLength();
 }
 
-const std::vector<const Selector *> &Rule::selectors() const
+const HostSelectors &Rule::selectors() const
 {
 	return m_selectors;
 }
@@ -250,7 +237,7 @@ std::ostream& operator<<(std::ostream& os, RulePtr r)
 		const auto& last_sel = r->selectors().back();
 		for (const auto& s : r->selectors())
 		{
-			selectors << s->toString();
+            selectors << s.toString();
 			if (last_sel != s)
 				selectors << " AND ";
 		}

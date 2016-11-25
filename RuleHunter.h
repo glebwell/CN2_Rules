@@ -1,8 +1,9 @@
 #pragma once
 #include "Rule.h"
-#include "DataFileReader.cuh"
 #include "Selectors.h"
 #include "SelectorGenerator.h"
+
+class DataContainer;
 
 class RuleHunter
 {
@@ -10,16 +11,15 @@ class RuleHunter
 public:
 	RuleHunter(unsigned char beam_width = 10);
 	// find best rule
-    RulePtr operator()(const DataVector& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules);
+    RulePtr operator()(DataContainer& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules);
 private:
-	RulePtr initializeRule(const DataVector& data, 
-		unsigned char target_class) const;
+    RulePtr initializeRule(unsigned char target_class) const;
 	
-    std::vector<RulePtr> refineRule(const DataVector& data, RulePtr candidate_rule);
+    std::vector<RulePtr> refineRule(DataContainer& data, RulePtr candidate_rule);
 	bool isExist(RulePtr tested_rule, const std::vector<RulePtr>& existing_rules) const;
 	std::vector<RulePtr> cutRules(const std::vector<RulePtr>& rules_to_cut) const;
-    std::vector<const Selector *> findNewSelectors(const DataVector& data, RulePtr r);
-	std::vector<float> makeSamples(const DataVector& data, unsigned char attr_idx) const;
+    std::vector<const Selector *> findNewSelectors(const DataContainer &data, RulePtr r);
+    //std::vector<float> makeSamples(const DataContainer& data, unsigned char attr_idx) const;
 
     SelectorGenerator m_gen;
 };

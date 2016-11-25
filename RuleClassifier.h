@@ -2,6 +2,7 @@
 #include "DataFileReader.cuh"
 #include "Rule.h"
 
+/*
 class RuleClassifier
 {
 	size_t m_total_examples_count;
@@ -18,3 +19,5 @@ private:
 	unsigned char predict(const std::vector<float>& example) const;
 
 };
+*/
+

@@ -5,7 +5,7 @@
 #include "DataFileReader.cuh"
 
 std::unique_ptr<DataFileReader> DataFileReader::m_self;
-thrust::device_vector<float>* DataFileReader::m_device_train_data;
+DeviceDataVector* DataFileReader::m_device_train_data;
 
 DataFileReader::DataFileReader(const char* filename, size_t train_data_size) :m_header_parsed(false)
 {
@@ -45,9 +45,14 @@ const std::vector<Attribute>& DataFileReader::attributes() const
 	return m_attributes;
 }
 
-thrust::host_vector<float>& DataFileReader::trainData()
+HostDataVector &DataFileReader::trainData()
 {
     return m_host_train_data;
+}
+
+DeviceDataVector& DataFileReader::deviceData()
+{
+    return *m_device_train_data;
 }
 
 /*
@@ -137,12 +142,14 @@ void DataFileReader::parseValueLine(const std::string& line, bool put_to_train)
 	}
 }
 
+/*
 void DataFileReader::insertToVector(DataVector& vec, int class_val, std::vector<float>&& data)
 {
 	if (vec.size() < (DataVector::size_type)class_val + 1)
 		vec.resize(class_val+1);
 	vec[class_val].push_back(std::move(data)); // put data in existing vector 
 }
+*/
 
 std::vector<std::string> DataFileReader::tokenize(const std::string& str, char delim /*= ' '*/, bool trimEmpty /*= true*/) const
 {
@@ -210,6 +217,7 @@ void DataFileReader::freeDeviceData()
 {
     if (m_device_train_data)
         delete m_device_train_data;
+    m_device_train_data = nullptr;
 }
 
 DataFileReaderException::DataFileReaderException(std::string&& msg) : m_msg(std::move(msg))

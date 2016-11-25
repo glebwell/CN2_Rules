@@ -1,22 +1,23 @@
 #include <algorithm>
 #include <set>
 #include "RuleHunter.h"
+#include "DataContainer.cuh"
 
 RuleHunter::RuleHunter(unsigned char beam_width) : m_beam_width(beam_width)
 {
 
 }
 
-RulePtr RuleHunter::initializeRule(const DataVector& data, unsigned char target_class) const
+RulePtr RuleHunter::initializeRule(unsigned char target_class) const
 {
 	RulePtr default_rule = std::make_shared<Rule>();
-	default_rule->filterAndStore(data, target_class);
+    default_rule->filterAndStore(target_class);
 	return default_rule->isValid() ? default_rule : nullptr;
 }
 
-RulePtr RuleHunter::operator()(const DataVector& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules)
+RulePtr RuleHunter::operator()(DataContainer& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules)
 {
-	RulePtr best_rule = initializeRule(data, target_class);
+    RulePtr best_rule = initializeRule(target_class);
 	if (!best_rule)
 		return nullptr;
 	else
@@ -64,7 +65,7 @@ bool RuleHunter::isExist(RulePtr tested_rule, const std::vector<RulePtr>& ex_rul
 	return ex_rules.cend() != std::find(ex_rules.cbegin(), ex_rules.cend(), tested_rule);
 }
 
-std::vector<RulePtr> RuleHunter::refineRule(const DataVector& data, RulePtr candidate_rule)
+std::vector<RulePtr> RuleHunter::refineRule(DataContainer& data, RulePtr candidate_rule)
 {
 	std::vector<RulePtr> result;
 	if (candidate_rule && candidate_rule->length() <= candidate_rule->maxRuleLength())
@@ -93,65 +94,72 @@ std::vector<RulePtr> RuleHunter::cutRules(const std::vector<RulePtr>& rules_to_c
 		return rules_to_cut;
 }
 
-std::vector<const Selector*> RuleHunter::findNewSelectors(const DataVector& data, RulePtr r)
+std::vector<const Selector*> RuleHunter::findNewSelectors( const DataContainer &data, RulePtr r)
 {
     std::vector<const Selector*> possible_selectors;
 	
 	// To generate nw selectors, we need unique values 
 	// Index of vector identify index of example attribute. That vector containes unique values of attributes.
 	const std::vector<Attribute>& attr_info = DataFileReader::getInstance().attributes();
-	size_t attr_size = attr_info.size();
-	std::vector<std::set<float>> attr_val_set(attr_size);
+    static const unsigned int ATTR_COUNT = attr_info.size();
+    std::vector<std::set<float>> attr_val_set(ATTR_COUNT); // TODO: make map attr_idx <-> values
 	float value;
     Attribute::attr_type attr_type;
-	const CoveryMap& map = r->coveryMap();
+    const CoveryOffsets& offsets = r->coveryOffsets();
+    HostDataVector& host_data = data.getHostData();
 
-	if (map.empty()) // generate for all data
+    static const unsigned int STEP = ATTR_COUNT + 2; // attr count + class + flag
+    HostDataVector::iterator it, end = host_data.end();
+
+    if (offsets.empty()) // generate for all data
 	{
-		for (const Examples& ex_list : data) // for data vector(classes)
-		{
-			for (const std::vector<float>& ex : ex_list) // for all examples
-			{
-				for (unsigned char attr_idx = 0; attr_idx < attr_size; ++attr_idx) // for all attributes indexes
-				{
-					auto& set = attr_val_set[attr_idx];
-					value = ex[attr_idx];
-					if (set.cend() == set.find(value)) // if this value is not in set - skipping selectors generation
-					{
-						set.insert(value);
-						// generate selectors
-                        attr_type = attr_info[attr_idx].m_type;
-                        m_gen.store(attr_type, value, attr_idx, possible_selectors);
-					}		
-				}
-			}
-		}
-	}
-	else // generate for covered by rule data 
-	{	
-		for (const auto& class_iter_pair : map) // for all iterators
-		{
-			const std::vector<float>& example = *class_iter_pair.second;
-		    for (unsigned char attr_idx = 0; attr_idx < attr_size; ++attr_idx) // for all attributes indexes
-		    {
-				auto& set = attr_val_set[attr_idx];
-				value = example[attr_idx];
+        for ( it = host_data.begin(); it != end; it += STEP )
+        {
+              //value = *(it + STEP - 1); // alive flag value
+              // DONT CHECK ALIVE FLAG
+              //if ( value == ALIVE_FLAG ) // check that stored object is valid
+              //{
+                    for (unsigned int attr_idx = 0; attr_idx < ATTR_COUNT; ++attr_idx) // get attribute values
+                    {
+                        auto& set = attr_val_set[attr_idx];
+                        value = *(it + attr_idx);
+                        if ( set.cend() == set.find(value) )
+                        {
+                            set.insert(value);
+                            attr_type = attr_info[attr_idx].m_type;
+                            // get selectors
+                            m_gen.store(attr_type, value, attr_idx, possible_selectors);
+                        }
+                    }
+              //}
 
-				if (set.cend() == set.find(value)) // if this value is not in set - skipping selectors generation
-				{
-					set.insert(value);
-					// generate selectors
+        }
+	}
+    else // get selectors for covered by rule data
+	{	
+        HostDataVector::iterator it = host_data.begin();
+
+        for (unsigned int off : offsets )
+        {
+            for (unsigned int attr_idx = 0; attr_idx < ATTR_COUNT; ++attr_idx) // get attribute values
+            {
+                auto& set = attr_val_set[attr_idx];
+                value = *(it + off + attr_idx); // *(it + off) it is a value of 0th attribute
+                if ( set.cend() == set.find(value) )
+                {
+                    set.insert(value);
                     attr_type = attr_info[attr_idx].m_type;
+                    // get selectors
                     m_gen.store(attr_type, value, attr_idx, possible_selectors);
-				}
-			}
-		}
+                }
+            }
+        }
 	}
 	return possible_selectors;
 }
 
-
-std::vector<float> RuleHunter::makeSamples(const DataVector& data, unsigned char attr_idx) const
+/*
+std::vector<float> RuleHunter::makeSamples(const DataContainer &data, unsigned char attr_idx) const
 {
 	std::vector<float> samples;
 	const std::vector<Examples>& exs_list = data;
@@ -176,3 +184,4 @@ std::vector<float> RuleHunter::makeSamples(const DataVector& data, unsigned char
 	std::generate(samples.begin(), samples.end(), [&min, &delta]() { float v = min; min += delta; return v; });
 	return samples;
 }
+*/
