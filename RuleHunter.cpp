@@ -139,20 +139,24 @@ std::vector<const Selector*> RuleHunter::findNewSelectors( const DataContainer &
 	{	
         HostDataVector::iterator it = host_data.begin();
 
-        for (unsigned int off : offsets )
+        for (int off : offsets )
         {
-            for (unsigned int attr_idx = 0; attr_idx < ATTR_COUNT; ++attr_idx) // get attribute values
+            if ( off != -1)
             {
-                auto& set = attr_val_set[attr_idx];
-                value = *(it + off + attr_idx); // *(it + off) it is a value of 0th attribute
-                if ( set.cend() == set.find(value) )
+                for (unsigned int attr_idx = 0; attr_idx < ATTR_COUNT; ++attr_idx) // get attribute values
                 {
-                    set.insert(value);
-                    attr_type = attr_info[attr_idx].m_type;
-                    // get selectors
-                    m_gen.store(attr_type, value, attr_idx, possible_selectors);
+                    auto& set = attr_val_set[attr_idx];
+                    value = *(it + off + attr_idx); // *(it + off) it is a value of 0th attribute
+                    if ( set.cend() == set.find(value) )
+                    {
+                        set.insert(value);
+                        attr_type = attr_info[attr_idx].m_type;
+                        // get selectors
+                        m_gen.store(attr_type, value, attr_idx, possible_selectors);
+                    }
                 }
             }
+
         }
 	}
 	return possible_selectors;

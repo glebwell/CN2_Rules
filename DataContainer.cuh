@@ -10,7 +10,7 @@ public:
     ~DataContainer();
     HostDataVector& getHostData() const;
     DeviceDataVector& getDeviceData() const;
-    HostDataVector countKernelCall(const thrust::host_vector<Selector> &host_selectors, Distribution& distribution_result_out);
+    thrust::host_vector<int> countKernelCall(const thrust::host_vector<Selector> &host_selectors, Distribution& distribution_result_out);
     void removeKernelCall(const thrust::host_vector<Selector>& host_selectors);
 private:
     HostDataVector& m_host_data;

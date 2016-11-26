@@ -9,7 +9,7 @@
 
 class Rule;
 class DataContainer;
-using CoveryOffsets = thrust::host_vector<unsigned int>;
+using CoveryOffsets = thrust::host_vector<int>;
 using HostSelectors = thrust::host_vector<Selector>;
 using RulePtr = std::shared_ptr<Rule>;
 

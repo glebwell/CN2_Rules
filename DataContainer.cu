@@ -4,6 +4,8 @@
 #include "DataFileReader.cuh"
 #include "KernelArray.h"
 
+#include <thrust/fill.h>
+
 DataContainer::DataContainer(HostDataVector& host_data, DeviceDataVector& device_data, unsigned int classes_amount, unsigned int alive_flag_position):
     m_host_data(host_data), m_device_data(device_data), m_classes_amount(classes_amount), m_alive_flag_pos(alive_flag_position), //m_deleted_objects_count(0),
     m_device_covered_indexes( m_device_data.size() / (m_alive_flag_pos + 1) ) // max possible covery size
@@ -27,7 +29,7 @@ DeviceDataVector& DataContainer::getDeviceData() const
 }
 
 __global__ void cn2_count_kernel(KernelArray<float>dev_data, KernelArray<Selector> sel_arr, unsigned int flag_position, KernelArray<unsigned int> res_arr,
-                                 KernelArray<unsigned int> covered_indexes, KernelArray<unsigned int> covered_indexes_count)
+                                 KernelArray<int> covered_indexes/*, KernelArray<unsigned int> covered_indexes_count*/)
 {
      unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -61,9 +63,9 @@ __global__ void cn2_count_kernel(KernelArray<float>dev_data, KernelArray<Selecto
              class_index = (int) dev_data.m_array[ thr_flag_pos - 1 ];
              atomicAdd(&res_arr.m_array[ class_index ], 1);
              covered_indexes.m_array[i] = thr_flag_pos - flag_position;
-             atomicAdd(&covered_indexes_count.m_array[0], 1);
+             //atomicAdd(&covered_indexes_count.m_array[0], 1);
 
-             //printf("covered_indexes_count = <%u>", covered_indexes_count.m_array[0]);
+             //printf("i = <%u> thr_flag_pos = <%u> inserted <%u>", i, thr_flag_pos, thr_flag_pos - flag_position);
          }
      }
 }
@@ -104,18 +106,23 @@ __global__ void cn2_mark_to_remove_kernel(KernelArray<float>dev_data, KernelArra
      }
 }
 
-HostDataVector DataContainer::countKernelCall(const thrust::host_vector<Selector>& host_selectors, Distribution& distribution_result_out )
+thrust::host_vector<int> DataContainer::countKernelCall(const thrust::host_vector<Selector>& host_selectors, Distribution& distribution_result_out )
 {
     thrust::device_vector<unsigned int> distribution_result(m_classes_amount);
     size_t max_possible_covery_size = m_device_covered_indexes.size();
-    thrust::device_vector<unsigned int> dev_counter(1);
+    //thrust::fill(m_device_covered_indexes.begin(), m_device_covered_indexes.end(), -1);
+    thrust::device_vector<int> device_covered_indexes(max_possible_covery_size, -1);
+    //thrust::device_vector<unsigned int> dev_counter(1);
     m_device_selectors = host_selectors;
     cn2_count_kernel<<< ( max_possible_covery_size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>
-              (m_device_data, m_device_selectors, m_alive_flag_pos, distribution_result, m_device_covered_indexes, dev_counter);
+              (m_device_data, m_device_selectors, m_alive_flag_pos, distribution_result, device_covered_indexes/*, dev_counter*/);
     cudaDeviceSynchronize();
     distribution_result_out = distribution_result;
-    thrust::host_vector<unsigned int> host_counter = dev_counter;
-    return HostDataVector(m_device_covered_indexes.begin(), m_device_covered_indexes.begin() + host_counter[0]);
+    //thrust::host_vector<unsigned int> host_counter = dev_counter;
+    thrust::host_vector<int> result(device_covered_indexes.begin(), device_covered_indexes.end());
+    std::vector<int> vec_offsets(result.begin(), result.end());
+    std::vector<unsigned int> vec_dist(distribution_result_out.begin(), distribution_result_out.end());
+    return result/*HostDataVector(m_device_covered_indexes.begin(), m_device_covered_indexes.end() + host_counter[0])*/;
 }
 
 void DataContainer::removeKernelCall(const thrust::host_vector<Selector>& host_selectors)

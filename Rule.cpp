@@ -31,16 +31,22 @@ void Rule::filterAndStore(unsigned char target_class)
 {
     m_target_class = target_class; // init class value
     m_rule_dist = DataFileReader::getInstance().distribution();
+    m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
     m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
 }
 
 void Rule::filterAndStore(DataContainer &data, unsigned char target_class)
 {
     m_target_class = target_class;
-    m_covered_offsets = data.countKernelCall(m_selectors, m_rule_dist);
-    m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
-    m_covered_offsets_check.assign(m_covered_offsets.cbegin(), m_covered_offsets.cend());
-    m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
+    //Selector& s = m_selectors.back();
+    //if (s.m_value == 5 && s.m_type == Selector::SelectorType::LESS_EQUAL)
+    //{
+        m_covered_offsets = data.countKernelCall(m_selectors, m_rule_dist);
+        m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
+        m_covered_offsets_check.assign(m_covered_offsets.cbegin(), m_covered_offsets.cend());
+        m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
+    //}
+
 }
 
 bool Rule::testRule(const std::vector<float>& example) const
@@ -234,8 +240,8 @@ std::ostream& operator<<(std::ostream& os, RulePtr r)
 	std::stringstream selectors;
 	if (!r->selectors().empty())
 	{
-		const auto& last_sel = r->selectors().back();
-		for (const auto& s : r->selectors())
+        const Selector& last_sel = r->selectors().back();
+        for (const Selector& s : r->selectors())
 		{
             selectors << s.toString();
 			if (last_sel != s)

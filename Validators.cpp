@@ -9,7 +9,7 @@ GuardianValidator::GuardianValidator(unsigned char length, unsigned char min_cov
 
 bool GuardianValidator::operator()(const Rule& r) const
 {
-	return r.coveredExamplesCount() > m_min_covered_examples
+    return r.coveredExamplesCount() >= m_min_covered_examples
 		&& r.length() <= m_max_rule_length
 		&& compareDistributions(r)
 		&& r.distribution()[r.targetClass()] != 0; // must find examples of rule class

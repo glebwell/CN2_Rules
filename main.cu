@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
         {
             DataFileReader::run(filename, 3000000);
             DataFileReader& fr = DataFileReader::getInstance();
-            unsigned int alive_flag_position = fr.attributes().size() + 2; // attributes + class + flag
+            unsigned int alive_flag_position = fr.attributes().size() + 1; // attributes + class + flag
             DataContainer data(fr.trainData(), fr.deviceData(), fr.distribution().size(), alive_flag_position);
             CN2UnorderedLearner learner;
             learner.fit(data);
