@@ -31,22 +31,17 @@ void Rule::filterAndStore(unsigned char target_class)
 {
     m_target_class = target_class; // init class value
     m_rule_dist = DataFileReader::getInstance().distribution();
-    m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
+    //m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
     m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
 }
 
 void Rule::filterAndStore(DataContainer &data, unsigned char target_class)
 {
     m_target_class = target_class;
-    //Selector& s = m_selectors.back();
-    //if (s.m_value == 5 && s.m_type == Selector::SelectorType::LESS_EQUAL)
-    //{
-        m_covered_offsets = data.countKernelCall(m_selectors, m_rule_dist);
-        m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
-        m_covered_offsets_check.assign(m_covered_offsets.cbegin(), m_covered_offsets.cend());
-        m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
-    //}
-
+    m_covered_offsets = data.countKernelCall(m_selectors, m_rule_dist);
+    //m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
+    //m_covered_offsets_check.assign(m_covered_offsets.cbegin(), m_covered_offsets.cend());
+    m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
 }
 
 bool Rule::testRule(const std::vector<float>& example) const
@@ -54,6 +49,11 @@ bool Rule::testRule(const std::vector<float>& example) const
     //TODO: this method
     return true;
     //return applySelectors(example);
+}
+
+bool Rule::qualityIsValid() const
+{
+    m_validator.checkQuality(*this);
 }
 
 void Rule::doEvaluate()
@@ -140,7 +140,11 @@ bool Rule::isSignificant(bool useInitialClassDist /*= false*/) const
 void Rule::addSelector(const Selector* s)
 {
     if (s)
-        m_selectors.push_back(*s);
+    {
+       m_selectors.push_back(*s);
+       //m_selectors_check.push_back(*s);
+    }
+
 }
 
 unsigned char Rule::targetClass() const
@@ -240,6 +244,7 @@ std::ostream& operator<<(std::ostream& os, RulePtr r)
 	std::stringstream selectors;
 	if (!r->selectors().empty())
 	{
+        /*
         const Selector& last_sel = r->selectors().back();
         for (const Selector& s : r->selectors())
 		{
@@ -247,6 +252,15 @@ std::ostream& operator<<(std::ostream& os, RulePtr r)
 			if (last_sel != s)
 				selectors << " AND ";
 		}
+        */
+        const HostSelectors& sel = r->selectors();
+        const unsigned int sel_size = sel.size();
+        for (unsigned int i = 0; i < sel_size; ++i)
+        {
+            selectors << sel[i].toString();
+            if (i != sel_size - 1)
+                selectors << " AND ";
+        }
 	}
 	
 	os << "IF " << selectors.str() << " THEN CLASS = " << (int)r->targetClass() << " " << r->distributionToString() <<" quality: " << r->quality() << "\n";

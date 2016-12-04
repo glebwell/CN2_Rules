@@ -9,7 +9,7 @@ class RuleHunter
 {
 	const unsigned char m_beam_width;
 public:
-	RuleHunter(unsigned char beam_width = 10);
+    RuleHunter(unsigned char beam_width = 1);
 	// find best rule
     RulePtr operator()(DataContainer& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules);
 private:

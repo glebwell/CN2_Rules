@@ -5,6 +5,7 @@
 #include "KernelArray.h"
 
 #include <thrust/fill.h>
+#include <thrust/remove.h>
 
 DataContainer::DataContainer(HostDataVector& host_data, DeviceDataVector& device_data, unsigned int classes_amount, unsigned int alive_flag_position):
     m_host_data(host_data), m_device_data(device_data), m_classes_amount(classes_amount), m_alive_flag_pos(alive_flag_position), //m_deleted_objects_count(0),
@@ -119,16 +120,22 @@ thrust::host_vector<int> DataContainer::countKernelCall(const thrust::host_vecto
     cudaDeviceSynchronize();
     distribution_result_out = distribution_result;
     //thrust::host_vector<unsigned int> host_counter = dev_counter;
-    thrust::host_vector<int> result(device_covered_indexes.begin(), device_covered_indexes.end());
-    std::vector<int> vec_offsets(result.begin(), result.end());
-    std::vector<unsigned int> vec_dist(distribution_result_out.begin(), distribution_result_out.end());
-    return result/*HostDataVector(m_device_covered_indexes.begin(), m_device_covered_indexes.end() + host_counter[0])*/;
+    //auto new_end = thrust::remove(device_covered_indexes.begin(), device_covered_indexes.end(), -1
+                                     //__device__ [] (int v) {return v == -1;}
+    //);
+
+    //thrust::host_vector<int> result(device_covered_indexes.begin(), device_covered_indexes.end());
+    //std::vector<int> vec_offsets(result.begin(), result.end());
+    //std::vector<unsigned int> vec_dist(distribution_result_out.begin(), distribution_result_out.end());
+    return thrust::host_vector<int>(device_covered_indexes.begin(), device_covered_indexes.end());
 }
 
 void DataContainer::removeKernelCall(const thrust::host_vector<Selector>& host_selectors)
 {
     m_device_selectors = host_selectors;
+    //std::vector<Selector> selectors_check(host_selectors.cbegin(), host_selectors.cend());
     size_t objects_count = m_device_data.size() / (m_alive_flag_pos + 1);
     cn2_mark_to_remove_kernel<<< ( objects_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>(m_device_data, m_device_selectors, m_alive_flag_pos);
+    //std::vector<float> data_check(m_device_data.cbegin(), m_device_data.cend());
     cudaDeviceSynchronize();
 }

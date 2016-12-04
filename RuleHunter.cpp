@@ -17,8 +17,9 @@ RulePtr RuleHunter::initializeRule(unsigned char target_class) const
 
 RulePtr RuleHunter::operator()(DataContainer& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules)
 {
-    RulePtr best_rule = initializeRule(target_class);
-	if (!best_rule)
+    RulePtr initial_rule = initializeRule(target_class);
+    RulePtr best_rule = initial_rule;
+    if (!initial_rule)
 		return nullptr;
 	else
 	{
@@ -55,6 +56,8 @@ RulePtr RuleHunter::operator()(DataContainer& data, unsigned char target_class, 
 		auto iter = std::find_if(existing_rules.cbegin(), existing_rules.cend(), [best_rule](const RulePtr& r) {return *r == *best_rule; });
 		if (iter != existing_rules.cend())
 			return nullptr;
+        if ( best_rule == initial_rule)
+            return nullptr;
 
 	}
 	return best_rule;
@@ -76,7 +79,7 @@ std::vector<RulePtr> RuleHunter::refineRule(DataContainer& data, RulePtr candida
 			RulePtr new_rule = std::make_shared<Rule>(candidate_rule);
 			new_rule->addSelector(sel);
 			new_rule->filterAndStore(data, candidate_rule->targetClass());
-			if (new_rule->isValid())
+            if ( new_rule->isValid() /* && new_rule->qualityIsValid() */)
 			{
 				new_rule->doEvaluate();
 				result.push_back(std::move(new_rule));
@@ -115,10 +118,9 @@ std::vector<const Selector*> RuleHunter::findNewSelectors( const DataContainer &
 	{
         for ( it = host_data.begin(); it != end; it += STEP )
         {
-              //value = *(it + STEP - 1); // alive flag value
-              // DONT CHECK ALIVE FLAG
-              //if ( value == ALIVE_FLAG ) // check that stored object is valid
-              //{
+              value = *(it + STEP - 1); // alive flag value
+              if ( value == ALIVE_FLAG ) // check that stored object is valid
+              {
                     for (unsigned int attr_idx = 0; attr_idx < ATTR_COUNT; ++attr_idx) // get attribute values
                     {
                         auto& set = attr_val_set[attr_idx];
@@ -131,7 +133,7 @@ std::vector<const Selector*> RuleHunter::findNewSelectors( const DataContainer &
                             m_gen.store(attr_type, value, attr_idx, possible_selectors);
                         }
                     }
-              //}
+              }
 
         }
 	}

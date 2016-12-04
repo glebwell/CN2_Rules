@@ -16,10 +16,11 @@ using RulePtr = std::shared_ptr<Rule>;
 class Rule
 {
     HostSelectors m_selectors;
+    //std::vector<Selector> m_selectors_check;
     CoveryOffsets m_covered_offsets;
-    std::vector<unsigned int> m_covered_offsets_check;
+    //std::vector<int> m_covered_offsets_check;
 	Distribution m_rule_dist;
-    std::vector<unsigned int> m_rule_dist_check;
+    //std::vector<unsigned int> m_rule_dist_check;
 	std::shared_ptr<Rule> m_parent_rule;
 	size_t m_covering;
 	float m_quality;
@@ -45,6 +46,7 @@ public:
 	void doEvaluate();
 	// test rule on test data
 	bool testRule(const std::vector<float>& example) const;
+    bool qualityIsValid() const;
 
 	unsigned char targetClass() const;
 	size_t coveredExamplesCount() const;

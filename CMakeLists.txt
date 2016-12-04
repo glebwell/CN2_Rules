@@ -5,7 +5,7 @@ find_package(CUDA QUIET REQUIRED)
 
 # Pass options to NVCC
 set( CUDA_PROPAGATE_HOST_FLAGS OFF )
-set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -g -D_DEBUG -DEBUG -std=c++11 --expt-extended-lambda) # -O3
+set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O3 -std=c++11 --expt-extended-lambda) #  -g -D_DEBUG -DEBUG
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)

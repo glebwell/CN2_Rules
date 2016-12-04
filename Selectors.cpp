@@ -19,7 +19,8 @@ std::string Selector::toString() const
         default:
             break;
         }
-        return attr_ref.at(m_attr_index).m_name + " " + op + " " + std::to_string(m_value);
+        std::string res = attr_ref.at(m_attr_index).m_name + " " + op + " " + std::to_string(m_value);
+        return res;
     }
     else
         throw std::logic_error("Attributes set is empty");

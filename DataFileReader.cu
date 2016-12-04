@@ -111,7 +111,7 @@ void DataFileReader::parseValueLine(const std::string& line, bool put_to_train)
         auto it = m_class_dist_map.find(class_value);
         if ( it == m_class_dist_map.end() ) // not found
         {
-            m_class_dist_map.emplace( class_value, 0u );
+            m_class_dist_map.emplace( class_value, 1u );
         }
         else
         {
