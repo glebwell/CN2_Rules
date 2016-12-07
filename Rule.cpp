@@ -51,11 +51,6 @@ bool Rule::testRule(const std::vector<float>& example) const
     //return applySelectors(example);
 }
 
-bool Rule::qualityIsValid() const
-{
-    m_validator.checkQuality(*this);
-}
-
 void Rule::doEvaluate()
 {
 	//

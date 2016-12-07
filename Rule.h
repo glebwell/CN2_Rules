@@ -46,7 +46,6 @@ public:
 	void doEvaluate();
 	// test rule on test data
 	bool testRule(const std::vector<float>& example) const;
-    bool qualityIsValid() const;
 
 	unsigned char targetClass() const;
 	size_t coveredExamplesCount() const;

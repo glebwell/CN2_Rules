@@ -18,7 +18,5 @@ private:
     thrust::device_vector<Selector> m_device_selectors;
     const unsigned int m_classes_amount;
     const unsigned int m_alive_flag_pos;
-    //unsigned int m_deleted_objects_count;
-    thrust::device_vector<unsigned int> m_device_covered_indexes;
-    unsigned int* m_device_covered_indexes_count;
+    thrust::device_vector<int> m_device_covered_indexes;
 };

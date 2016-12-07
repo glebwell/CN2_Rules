@@ -7,13 +7,12 @@
 void CN2UnorderedLearner::fit(DataContainer& data)
 {
     DataFileReader& reader = DataFileReader::getInstance();
-    GuardianValidator::setMajorityQuality(reader.majorityQuality());
     size_t classAmount = reader.distribution().size();
     for (unsigned char curr_class = 0; curr_class < classAmount; ++curr_class)
     {
         findRules(data, curr_class);
     }
-    //filterRulesByQuality();
+    filterRulesByQuality();
     // sort by class
     std::sort(m_rules.begin(), m_rules.end(), [](const RulePtr& r1, const RulePtr& r2) {return r1->targetClass() < r2->targetClass(); });
     m_rules.push_back(generateDefaultRule());

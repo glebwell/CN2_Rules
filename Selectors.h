@@ -33,14 +33,11 @@ struct Selector
     }
     __host__ __device__ bool operator==(const Selector& rhs) const
     {
-        return (m_type == rhs.m_type) || (m_value == rhs.m_value) || (m_attr_index == rhs.m_attr_index);
+        return m_type == rhs.m_type && m_value == rhs.m_value && m_attr_index == rhs.m_attr_index;
     }
     __host__ __device__ bool operator!=(const Selector& rhs) const
     {
-        return (m_type != rhs.m_type)
-                || (m_value != rhs.m_value)
-                || (m_attr_index != rhs.m_attr_index);
-
+        return (m_type != rhs.m_type) || (m_value != rhs.m_value) || (m_attr_index != rhs.m_attr_index);
     }
 
     bool operator<(const Selector& rhs) const
