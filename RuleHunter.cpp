@@ -16,47 +16,50 @@ RulePtr RuleHunter::initializeRule(const DataVector& data, unsigned char target_
 
 RulePtr RuleHunter::operator()(const DataVector& data, unsigned char target_class, const std::vector<RulePtr>& existing_rules)
 {
-	RulePtr best_rule = initializeRule(data, target_class);
-	if (!best_rule)
-		return nullptr;
-	else
-	{
-		std::vector<RulePtr> rules{ best_rule };
-		
-		while (!rules.empty())
-		{
-			std::vector<RulePtr> candidates = std::move(rules);
-			for (const auto& cand : candidates)
-			{
-				// try to refine the rules
-				std::vector<RulePtr> new_rules = refineRule(data, cand);
-				if (!new_rules.empty())
-				{
-					if (rules.capacity() < new_rules.size())
-						rules.reserve(new_rules.size());
+    RulePtr initial_rule = initializeRule(data, target_class);
+    RulePtr best_rule = initial_rule;
+    if (!initial_rule)
+       return nullptr;
+    else
+    {
+       std::vector<RulePtr> rules{ best_rule };
 
-					std::copy(new_rules.begin(), new_rules.end(), std::back_inserter(rules));
-					for (const auto& rule : new_rules)
-					{
-						if (*rule > *best_rule && /*rule->isSignificant() && */!isExist(rule, existing_rules))
-							best_rule = rule;
-					}
-					static const auto& comp = [](const RulePtr& r1, const RulePtr& r2) { return *r1 > *r2; };
-					std::sort(rules.begin(), rules.end(), comp);
-					// cut rules accoding to beam width
-					rules = cutRules(rules);
-				}	
-			}
-		}
+       while (!rules.empty())
+       {
+           std::vector<RulePtr> candidates = std::move(rules);
+           for (const auto& cand : candidates)
+           {
+               // try to refine the rules
+               std::vector<RulePtr> new_rules = refineRule(data, cand);
+               if (!new_rules.empty())
+               {
+                   if (rules.capacity() < new_rules.size())
+                       rules.reserve(new_rules.size());
 
-		//if (existing_rules.cend() != std::find(existing_rules.cbegin(), existing_rules.cend(), best_rule)) // already exist
-			//return nullptr;
-		auto iter = std::find_if(existing_rules.cbegin(), existing_rules.cend(), [best_rule](const RulePtr& r) {return *r == *best_rule; });
-		if (iter != existing_rules.cend())
-			return nullptr;
+                   std::copy(new_rules.begin(), new_rules.end(), std::back_inserter(rules));
+                   for (const auto& rule : new_rules)
+                   {
+                       if (*rule > *best_rule && /*rule->isSignificant() && */!isExist(rule, existing_rules))
+                           best_rule = rule;
+                   }
+                   static const auto& comp = [](const RulePtr& r1, const RulePtr& r2) { return *r1 > *r2; };
+                   std::sort(rules.begin(), rules.end(), comp);
+                   // cut rules accoding to beam width
+                   rules = cutRules(rules);
+               }
+           }
+       }
 
-	}
-	return best_rule;
+       //if (existing_rules.cend() != std::find(existing_rules.cbegin(), existing_rules.cend(), best_rule)) // already exist
+           //return nullptr;
+       auto iter = std::find_if(existing_rules.cbegin(), existing_rules.cend(), [best_rule](const RulePtr& r) {return *r == *best_rule; });
+       if (iter != existing_rules.cend())
+           return nullptr;
+       if ( best_rule == initial_rule)
+           return nullptr;
+
+    }
+    return best_rule;
 }
 
 bool RuleHunter::isExist(RulePtr tested_rule, const std::vector<RulePtr>& ex_rules) const

@@ -157,7 +157,7 @@ void DataFileReader::run(const char* filename, size_t train_data_size)
 void DataFileReader::calcClassDistribution()
 {
 	// calculate class <-> data count
-	m_class_dist.reserve(m_test_data.size());
+    m_class_dist.reserve(m_train_data.size());
 	for (const auto& examples_vec : m_train_data)
 		m_class_dist.push_back(examples_vec.size());
 }
