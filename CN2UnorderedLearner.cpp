@@ -3,6 +3,12 @@
 #include "CN2UnorderedLearner.h"
 #include "Rule.h"
 
+CN2UnorderedLearner::CN2UnorderedLearner(float min_rule_quality, unsigned char beam_width):
+   m_min_rule_quality(min_rule_quality), m_hunter(beam_width), m_avg_quality(0), m_max_quality(0), m_db_coverage(0)
+{
+
+}
+
 void CN2UnorderedLearner::fit(DataVector& data)
 {
     size_t classAmount = DataFileReader::getInstance().distribution().size();
@@ -64,11 +70,10 @@ void CN2UnorderedLearner::printRules() const
 
 void CN2UnorderedLearner::filterRulesByQuality()
 {
-    float majority_quality = DataFileReader::getInstance().majorityQuality();
     std::vector<RulePtr> filtered_rules;
     filtered_rules.reserve(m_rules.size());
     std::copy_if(m_rules.cbegin(), m_rules.cend(), std::back_inserter(filtered_rules),
-                 [majority_quality](RulePtr r) { return r->quality() > majority_quality;}
+                 [this](RulePtr r) { return r->quality() > m_min_rule_quality;}
     );
     m_rules = std::move(filtered_rules);
 }
@@ -76,5 +81,57 @@ void CN2UnorderedLearner::filterRulesByQuality()
 
 const std::vector<RulePtr>& CN2UnorderedLearner::rules() const
 {
-	return m_rules;
+    return m_rules;
 }
+
+void CN2UnorderedLearner::calcRuleInfo()
+{
+    RulePtr default_rule = m_rules.back();
+    const Distribution& default_rule_dist = default_rule->distribution();
+    const unsigned int classes_count = default_rule_dist.size();
+    size_t total_objects = 0;
+    total_objects = std::accumulate(default_rule_dist.cbegin(), default_rule_dist.cend(), total_objects);
+    Distribution db_coverage_dist( default_rule_dist.size() );
+
+    auto prev_end = --m_rules.end();
+    float quality;
+    for (auto it = m_rules.cbegin(); it != prev_end; ++it)
+    {
+        quality = (*it)->quality();
+        if (m_max_quality < quality)
+            m_max_quality = quality;
+
+        for (unsigned int i = 0; i < classes_count; ++i)
+        {
+            db_coverage_dist[i] += (*it)->distribution()[i];
+        }
+        m_avg_quality += quality;
+    }
+
+    size_t covered_objects = 0;
+    covered_objects = std::accumulate(db_coverage_dist.cbegin(), db_coverage_dist.cend(), covered_objects);
+    m_db_coverage = covered_objects / (float)total_objects;
+    m_avg_quality /= rulesCount();
+}
+
+size_t CN2UnorderedLearner::rulesCount() const
+{
+    // exclude default rule
+    return m_rules.size() - 1;
+}
+
+float CN2UnorderedLearner::averageQuality() const
+{
+    return m_avg_quality;
+}
+
+float CN2UnorderedLearner::maxQuality() const
+{
+    return m_max_quality;
+}
+
+float CN2UnorderedLearner::databaseCoverage() const
+{
+    return m_db_coverage;
+}
+

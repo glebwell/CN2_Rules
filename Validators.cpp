@@ -1,8 +1,10 @@
 #include "Validators.h"
 #include "Rule.h"
 
-GuardianValidator::GuardianValidator(unsigned char length, unsigned char min_cov_examples): 
-	m_max_rule_length(length), m_min_covered_examples(min_cov_examples)
+unsigned int GuardianValidator::m_max_rule_length = 1;
+
+GuardianValidator::GuardianValidator(unsigned char min_cov_examples):
+    m_min_covered_examples(min_cov_examples)
 {
 
 }
@@ -31,5 +33,10 @@ unsigned char GuardianValidator::maxRuleLength() const
 
 unsigned char GuardianValidator::minCoveredExamples() const
 {
-	return m_min_covered_examples;
+    return m_min_covered_examples;
+}
+
+void GuardianValidator::setMaxRuleLength(unsigned int len)
+{
+    m_max_rule_length = len;
 }
