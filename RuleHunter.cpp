@@ -97,7 +97,7 @@ std::vector<RulePtr> RuleHunter::cutRules(const std::vector<RulePtr>& rules_to_c
 		return rules_to_cut;
 }
 
-std::vector<const Selector*> RuleHunter::findNewSelectors( const DataContainer &data, RulePtr r)
+std::vector<const Selector*> RuleHunter::findNewSelectors(DataContainer &data, RulePtr r)
 {
     std::vector<const Selector*> possible_selectors;
 	
@@ -108,7 +108,7 @@ std::vector<const Selector*> RuleHunter::findNewSelectors( const DataContainer &
     std::vector<std::set<float>> attr_val_set(ATTR_COUNT); // TODO: make map attr_idx <-> values
 	float value;
     Attribute::attr_type attr_type;
-    const CoveryOffsets& offsets = r->coveryOffsets();
+    const CoveryOffsets& offsets = r->coveryOffsets(data);
     HostDataVector& host_data = data.getHostData();
 
     static const unsigned int STEP = ATTR_COUNT + 2; // attr count + class + flag

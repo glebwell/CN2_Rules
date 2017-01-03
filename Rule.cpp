@@ -8,7 +8,7 @@
 
 GuardianValidator Rule::m_validator;
 
-Rule::Rule(RulePtr r) : m_parent_rule(r), m_covering(0), m_quality(0), m_target_class(-1)
+Rule::Rule(RulePtr r) : m_parent_rule(r), m_covering(0), m_quality(0), m_target_class(255), m_offsets_is_calculated(false)
 {
 	if (m_parent_rule) // copy selectors from parent rule
 	{
@@ -16,17 +16,6 @@ Rule::Rule(RulePtr r) : m_parent_rule(r), m_covering(0), m_quality(0), m_target_
 	}
 }
 
-/*
-bool Rule::applySelectors(const std::vector<float>& example) const
-{ 
-    for (const Selector& sel : m_selectors)
-	{
-        if ( sel(example[sel.m_attr_index]) == false) // call selector
-			return false;
-	}
-	return true;
-}
-*/
 void Rule::filterAndStore(unsigned char target_class)
 {
     m_target_class = target_class; // init class value
@@ -38,7 +27,9 @@ void Rule::filterAndStore(unsigned char target_class)
 void Rule::filterAndStore(DataContainer &data, unsigned char target_class)
 {
     m_target_class = target_class;
-    m_covered_offsets = data.countKernelCall(m_selectors, m_rule_dist);
+    m_rule_dist = data.classDistKernelCall(m_selectors);
+    /*m_covered_offsets = data.offsetsKernelCall(m_selectors);*/
+
     //m_rule_dist_check.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
     //m_covered_offsets_check.assign(m_covered_offsets.cbegin(), m_covered_offsets.cend());
     m_covering = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0u);
@@ -73,65 +64,6 @@ bool Rule::isValid() const
 	return m_validator(*this);
 }
 
-bool Rule::isSignificant(bool useInitialClassDist /*= false*/) const
-{
-	const Distribution* p_dist;
-	if (useInitialClassDist)
-		p_dist = &DataFileReader::getInstance().distribution();
-	else if (m_parent_rule)
-		p_dist = &m_parent_rule->m_rule_dist;
-	else
-		return true;
-
-	unsigned char tc = m_target_class;
-	float tc_class_dist = (float)m_rule_dist[tc];
-	float tc_p_class_dist = (float)((*p_dist)[tc]);
-    float dist_sum = std::accumulate(m_rule_dist.cbegin(), m_rule_dist.cend(), 0.f);
-	float p_dist_sum = std::accumulate(p_dist->cbegin(), p_dist->cend(), 0.f);
-	std::vector<float> x, y;
-	if (tc != -1)
-	{
-		x = { tc_class_dist, dist_sum - tc_class_dist };
-		y = { tc_p_class_dist, p_dist_sum - tc_p_class_dist };
-	}
-	else
-	{
-		const Distribution& p_dist_ref = *p_dist;
-		// suppress warnings
-		for (size_t i = 0; i < m_rule_dist.size(); ++i)
-		{
-			x.push_back((float)m_rule_dist[i]);
-			y.push_back((float)p_dist_ref[i]);
-		}
-		
-		//x.assign(m_rule_dist.cbegin(), m_rule_dist.cend());
-		//y.assign(p_dist->cbegin(), p_dist->cend());
-		//std::copy(m_rule_dist.cbegin(), m_rule_dist.cend(), std::back_inserter(x));
-		//std::copy(p_dist->cbegin(), p_dist->cend(), std::back_inserter(y));
-	}
-
-	//
-	// calculate likelihood ratio statistic
-	//
-
-	if (x[0] == 0)
-		x[0] = (float)1e-5;
-	if (y[0] == 0)
-		y[0] = (float)1e-5;
-
-	float x_sum = std::accumulate(x.cbegin(), x.cend(), 0.f);
-	float y_sum = std::accumulate(y.cbegin(), y.cend(), 0.f);
-	float div = x_sum / y_sum;
-	std::for_each(y.begin(), y.end(), [div](float v){ return v * div;});
-
-	float sum = 0;
-	for (size_t i = 0; i < x.size(); i++)
-		sum += x[i] * std::log(x[i] / y[i]);
-
-	float lrs = 2 * sum;
-	return lrs > 0;
-}
-
 void Rule::addSelector(const Selector* s)
 {
     if (s)
@@ -152,8 +84,13 @@ size_t Rule::coveredExamplesCount() const
 	return m_covering;
 }
 
-const CoveryOffsets& Rule::coveryOffsets() const
+const CoveryOffsets& Rule::coveryOffsets(DataContainer &data)
 {
+    if ( !m_offsets_is_calculated )
+    {
+        m_covered_offsets = data.offsetsKernelCall(m_selectors);
+        m_offsets_is_calculated = true;
+    }
     return m_covered_offsets;
 }
 
@@ -231,9 +168,15 @@ unsigned char Rule::maxRuleLength() const
 
 const HostSelectors &Rule::selectors() const
 {
-	return m_selectors;
+    return m_selectors;
 }
 
+/*
+DeviceSelectors &Rule::deviceSelectors()
+{
+    return m_device_selectors;
+}
+*/
 std::ostream& operator<<(std::ostream& os, RulePtr r)
 {
 	std::stringstream selectors;

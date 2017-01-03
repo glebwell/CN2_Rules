@@ -1,51 +1,39 @@
 #include <iostream>
 #include "DataFileReader.cuh"
 #include "CN2UnorderedLearner.h"
-//#include "RuleClassifier.h"
 #include "Measure.h"
 #include "DataContainer.cuh"
 
-//CN2UnorderedLearner learner;
-
-void train()
-{
-    //learner.fit(DataFileReader::getInstance().trainData());
-    //learner.printRules();
-}
-void test()
-{
-    //RuleClassifier rc(DataFileReader::getInstance().testData(), learner.rules());
-    //rc.run();
-}
 int main(int argc, char* argv[])
 {
-    const char* filename = argv[1];
-    if ( filename )
+
+    if ( argc != 5 )
+    {
+        std::cout << "usage: <program> <filename> <max_rule_length> <beam_width> <min_rule_conf>\n";
+    }
+    else
     {
         try
         {
-            DataFileReader::run(filename, 3000000);
+            const char* filename = argv[1];
+            unsigned int max_rule_length = std::stoul( argv[2] );
+            unsigned char beam_width = std::stoul( argv[3] );
+            float min_rule_conf = std::stof( argv[4] );
+
+            DataFileReader::run(filename, -1);
             DataFileReader& fr = DataFileReader::getInstance();
+            GuardianValidator::setMaxRuleLength(max_rule_length);
             unsigned int alive_flag_position = fr.attributes().size() + 1; // attributes + class + flag
             DataContainer data(fr.trainData(), fr.deviceData(), fr.distribution().size(), alive_flag_position);
-            CN2UnorderedLearner learner;
+            CN2UnorderedLearner learner(min_rule_conf, beam_width);
             learner.fit(data);
             learner.printRules();
 
-            //std::cout << measure<>::execution(train) <<"ms" << "\n";
-            //std::cout << measure<>::execution(test) << "ms" << "\n";
-            /*
-            thrust::host_vector<float>& h_vec = DataFileReader::getInstance().trainData();
-            size_t line = DataFileReader::getInstance().attributes().size() + 2;
-            for (size_t i = 0; i < h_vec.size(); ++i)
-            {
-                if (i != 0 && (i % line) == 0 )
-                    std::cout << "\n";
-                std::cout  << h_vec[i] << " ";
-            }
+            std::cout << "Total rules : " << learner.rulesCount() << "\n";
+            std::cout << "Average quality : " << learner.averageQuality() << "\n";
+            std::cout << "Max quality : " << learner.maxQuality() << "\n";
+            std::cout << "Database coverage: " << learner.databaseCoverage() * 100 << "%\n";
 
-            std::cout << "\n";
-            */
             DataFileReader::freeDeviceData();
         }
         catch (const std::exception& e)
@@ -53,11 +41,6 @@ int main(int argc, char* argv[])
             std::cout << e.what() << "\n";
         }
     }
-    else
-    {
-        std::cout << "input file is not set" << std::endl;
-    }
 
-	
 	return 0;
 }

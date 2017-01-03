@@ -22,21 +22,19 @@ cuda_add_executable(
 	    CN2_Rules
             Defines.cuh
             Attribute.h
-            CN2UnorderedLearner.cpp
-            CN2UnorderedLearner.h
+			CN2UnorderedLearner.cpp
+			CN2UnorderedLearner.h
             DataFileReader.cu
-            DataFileReader.cuh
-            Rule.cpp
-            Rule.h
-            RuleHunter.cpp
-            RuleHunter.h
+			DataFileReader.cuh
+			Rule.cpp
+			Rule.h
+			RuleHunter.cpp
+			RuleHunter.h
             Selectors.cpp
             Selectors.h
             Validators.cpp
             Validators.h
             Measure.h
-            RuleClassifier.cpp
-            RuleClassifier.h
             SelectorGenerator.cpp
             SelectorGenerator.h
             DataContainer.cu

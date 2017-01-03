@@ -18,7 +18,7 @@ private:
     std::vector<RulePtr> refineRule(DataContainer& data, RulePtr candidate_rule);
 	bool isExist(RulePtr tested_rule, const std::vector<RulePtr>& existing_rules) const;
 	std::vector<RulePtr> cutRules(const std::vector<RulePtr>& rules_to_cut) const;
-    std::vector<const Selector *> findNewSelectors(const DataContainer &data, RulePtr r);
+    std::vector<const Selector *> findNewSelectors(DataContainer &data, RulePtr r);
     //std::vector<float> makeSamples(const DataContainer& data, unsigned char attr_idx) const;
 
     SelectorGenerator m_gen;

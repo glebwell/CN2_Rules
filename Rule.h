@@ -11,6 +11,7 @@ class Rule;
 class DataContainer;
 using CoveryOffsets = thrust::host_vector<int>;
 using HostSelectors = thrust::host_vector<Selector>;
+using DeviceSelectors = thrust::device_vector<Selector>;
 using RulePtr = std::shared_ptr<Rule>;
 
 class Rule
@@ -25,6 +26,7 @@ class Rule
 	size_t m_covering;
 	float m_quality;
 	unsigned char m_target_class;
+    bool m_offsets_is_calculated;
 	static GuardianValidator m_validator;
 
 public:
@@ -39,9 +41,7 @@ public:
     void filterAndStore(DataContainer &data, unsigned char target_class);
     void filterAndStore(unsigned char target_class);
 	// Return True if the rule passes the general validator's requirements
-	bool isValid() const;
-	// Return True if the rule passes the significance validator's requirements(is significant in regard to its parent).
-	bool isSignificant(bool useInitialClassDist = false) const;
+    bool isValid() const;
 	// Evaluate the rule's quality and complexity.
 	void doEvaluate();
 	// test rule on test data
@@ -53,8 +53,9 @@ public:
 	const Distribution& distribution() const;
 	std::shared_ptr<Rule> parent() const;
 	unsigned char maxRuleLength() const;
-    const CoveryOffsets& coveryOffsets() const;
+    const CoveryOffsets& coveryOffsets(DataContainer &data);
     const HostSelectors& selectors() const;
+    //DeviceSelectors& deviceSelectors();
 	std::string distributionToString() const;
 	float quality() const;
 private:
